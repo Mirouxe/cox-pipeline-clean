@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 from scipy.stats import gaussian_kde
 
@@ -119,17 +120,23 @@ def save_inference_probability_curves_with_true_time(model, X, T, E, output_dir:
     proba = 1.0 - surv.values
 
     fig, ax = plt.subplots(figsize=(10, 6))
+    legend_handles = []
     for i in range(n):
-        label = f"Essai {i+1} ({'obs' if E[i] == 1 else 'cens'}, t={T[i]:.1f})"
-        ax.plot(times, proba[:, i], alpha=0.8, linewidth=2, label=label)
-        ax.axvline(T[i], color=ax.lines[-1].get_color(), linestyle="--", alpha=0.35, linewidth=1.5)
+        state = "obs" if E[i] == 1 else "cens"
+        curve_label = f"Essai {i+1} - courbe ({state})"
+        line, = ax.plot(times, proba[:, i], alpha=0.8, linewidth=2, label=curve_label)
+        color = line.get_color()
+        ax.axvline(T[i], color=color, linestyle="--", alpha=0.5, linewidth=1.5)
+        legend_handles.append(Line2D([0], [0], color=color, linewidth=2, label=curve_label))
+        legend_handles.append(Line2D([0], [0], color=color, linestyle="--", linewidth=1.5,
+                                     label=f"Essai {i+1} - t_réel={T[i]:.1f} ({state})"))
 
     ax.set_xlabel("Temps")
     ax.set_ylabel("P(apparition avant t)")
     ax.set_title("Courbes de probabilité d'apparition avec temps réel")
     ax.set_ylim(0, 1.05)
     ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=8, loc="lower right")
+    ax.legend(handles=legend_handles, fontsize=8, loc="center left", bbox_to_anchor=(1.02, 0.5))
     plt.tight_layout()
     plt.savefig(output_dir / "inference_probability_curves_with_true_time.png", dpi=150, bbox_inches="tight")
     plt.close()
