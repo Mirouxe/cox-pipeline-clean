@@ -6,7 +6,7 @@ from pathlib import Path
 from .data import load_config, prepare_dataset
 from .metrics import evaluate_brier_and_calibration, evaluate_pit_band, evaluate_time_auc, validate_cox
 from .model import export_cox_formula, fit_cox_model, infer_with_formula, infer_with_lifelines, save_model
-from .plots import save_brier_plot, save_calibration_plot, save_hazard_ratios, save_pit_band_plot, save_risk_time_map_eta, save_time_auc_plot, save_validation_plot
+from .plots import save_brier_plot, save_calibration_plot, save_hazard_ratios, save_inference_probability_curves_with_true_time, save_pit_band_plot, save_risk_time_map_eta, save_time_auc_plot, save_validation_plot
 from .reporting import build_report, write_report
 
 
@@ -42,6 +42,7 @@ def run_pipeline(config_path: str | Path):
     save_time_auc_plot(auc, output_dir)
     save_pit_band_plot(pit, output_dir)
     save_risk_time_map_eta(model, X, T, E, output_dir)
+    save_inference_probability_curves_with_true_time(model, X, T, E, output_dir)
 
     sample = X.head(5).copy()
     infer_with_lifelines(model, sample, horizons).to_csv(output_dir / "inference_lifelines.csv", index=False)

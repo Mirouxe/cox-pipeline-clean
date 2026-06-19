@@ -107,6 +107,34 @@ def save_pit_band_plot(pit: dict, output_dir: Path):
     plt.close()
 
 
+def save_inference_probability_curves_with_true_time(model, X, T, E, output_dir: Path, n_samples: int = 10):
+    X = X.astype(float)
+    T = np.asarray(T, dtype=float)
+    E = np.asarray(E, dtype=int)
+
+    n = min(n_samples, len(X))
+    subset = X.iloc[:n]
+    surv = model.predict_survival_function(subset)
+    times = surv.index.values
+    proba = 1.0 - surv.values
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for i in range(n):
+        label = f"Essai {i+1} ({'obs' if E[i] == 1 else 'cens'}, t={T[i]:.1f})"
+        ax.plot(times, proba[:, i], alpha=0.8, linewidth=2, label=label)
+        ax.axvline(T[i], color=ax.lines[-1].get_color(), linestyle="--", alpha=0.35, linewidth=1.5)
+
+    ax.set_xlabel("Temps")
+    ax.set_ylabel("P(apparition avant t)")
+    ax.set_title("Courbes de probabilité d'apparition avec temps réel")
+    ax.set_ylim(0, 1.05)
+    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=8, loc="lower right")
+    plt.tight_layout()
+    plt.savefig(output_dir / "inference_probability_curves_with_true_time.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+
 def save_risk_time_map_eta(model, X, T, E, output_dir: Path):
     X = X.astype(float)
     T = np.asarray(T, dtype=float)
