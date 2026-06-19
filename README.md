@@ -30,6 +30,7 @@ Le pipeline génère notamment :
 - `cox_calibration.png`
 - `cox_time_auc.png`
 - `cox_pit_band.png`
+- `cox_risk_time_map_eta.png`
 - `cox_embedded.json`
 - `cox_model.joblib`
 - `report_interpretation.md`
