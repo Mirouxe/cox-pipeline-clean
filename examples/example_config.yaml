@@ -1,0 +1,34 @@
+data:
+  path: ../MODELE_COX/data/synthetic_dataset.xlsx
+  sheet_name: essais
+  target_time: Y_time
+  target_event: Y_event
+  features:
+    continuous:
+      - X1_cont
+      - X2_cont
+      - X3_cont
+      - X4_cont
+      - X5_cont
+    categorical:
+      - X6_cat
+      - X7_cat
+      - X8_cat
+    categorical_levels:
+      X6_cat: [A, B, C]
+      X7_cat: [M1, M2]
+      X8_cat: [L1, L2, L3, L4, L5]
+
+model:
+  penalizer: 0.01
+  time_horizons: [10, 20, 30, 45, 60]
+
+validation:
+  cv_folds: 5
+  bootstrap_n_iter: 200
+  random_state: 42
+  auc_n_times: 20
+  pit_band: [0.8, 1.0]
+
+outputs:
+  dir: outputs
