@@ -108,7 +108,7 @@ def save_pit_band_plot(pit: dict, output_dir: Path):
     plt.close()
 
 
-def save_inference_probability_curves_with_true_time(model, X, T, E, output_dir: Path, n_samples: int = 10):
+def save_inference_probability_curves_with_true_time(model, X, T, E, output_dir: Path, n_samples: int = 10, max_features_in_legend: int = 3):
     X = X.astype(float)
     T = np.asarray(T, dtype=float)
     E = np.asarray(E, dtype=int)
@@ -119,17 +119,20 @@ def save_inference_probability_curves_with_true_time(model, X, T, E, output_dir:
     times = surv.index.values
     proba = 1.0 - surv.values
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    feature_priority = subset.var().sort_values(ascending=False).index.tolist()
+    selected_features = feature_priority[:max_features_in_legend]
+
+    fig, ax = plt.subplots(figsize=(12, 6))
     legend_handles = []
     for i in range(n):
         state = "obs" if E[i] == 1 else "cens"
-        curve_label = f"Essai {i+1} - courbe ({state})"
-        line, = ax.plot(times, proba[:, i], alpha=0.8, linewidth=2, label=curve_label)
+        feature_desc = " | ".join(f"{col}={subset.iloc[i][col]:.3g}" for col in selected_features)
+        curve_label = f"Essai {i+1} - {feature_desc}"
+        line, = ax.plot(times, proba[:, i], alpha=0.8, linewidth=2)
         color = line.get_color()
         ax.axvline(T[i], color=color, linestyle="--", alpha=0.5, linewidth=1.5)
-        legend_handles.append(Line2D([0], [0], color=color, linewidth=2, label=curve_label))
-        legend_handles.append(Line2D([0], [0], color=color, linestyle="--", linewidth=1.5,
-                                     label=f"Essai {i+1} - t_réel={T[i]:.1f} ({state})"))
+        legend_handles.append(Line2D([0], [0], color=color, linewidth=2,
+                                     label=f"{curve_label} ({state})"))
 
     ax.set_xlabel("Temps")
     ax.set_ylabel("P(apparition avant t)")
