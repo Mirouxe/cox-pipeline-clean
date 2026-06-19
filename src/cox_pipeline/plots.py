@@ -114,8 +114,19 @@ def save_risk_time_map_eta(model, X, T, E, output_dir: Path):
 
     eta = np.log(model.predict_partial_hazard(X).values)
     coef = model.params_.sort_values()
-    spread = (X.quantile(0.90) - X.quantile(0.10)).reindex(coef.index).fillna(0.0)
-    contribution = (coef * spread).sort_values()
+
+    contribution = {}
+    for var, beta in coef.items():
+        unique_values = set(np.unique(X[var].dropna().values))
+        if unique_values.issubset({0.0, 1.0}):
+            contribution[var] = float(beta)
+        else:
+            spread = float(X[var].quantile(0.90) - X[var].quantile(0.10))
+            contribution[var] = float(beta * spread)
+    contribution = np.array([contribution[var] for var in coef.index], dtype=float)
+    contribution_series = coef.copy()
+    contribution_series.loc[:] = contribution
+    contribution_series = contribution_series.sort_values()
 
     bch = model.baseline_cumulative_hazard_
     t_grid = np.linspace(float(bch.index.min()), float(bch.index.max()), 220)
@@ -145,12 +156,12 @@ def save_risk_time_map_eta(model, X, T, E, output_dir: Path):
     ax_top = fig.add_subplot(gs[1, 1], sharex=ax_strip)
     ax_map = fig.add_subplot(gs[2, 1], sharex=ax_strip)
 
-    colors = ["#d73027" if x > 0 else "#1a9850" for x in contribution.values]
-    ax_decomp.barh(range(len(contribution)), contribution.values, color=colors, edgecolor="black", alpha=0.85)
+    colors = ["#d73027" if x > 0 else "#1a9850" for x in contribution_series.values]
+    ax_decomp.barh(range(len(contribution_series)), contribution_series.values, color=colors, edgecolor="black", alpha=0.85)
     ax_decomp.axvline(0, color="black", linewidth=1)
-    ax_decomp.set_yticks(range(len(contribution)))
-    ax_decomp.set_yticklabels(contribution.index, fontsize=9)
-    ax_decomp.set_xlabel("Contribution à η (P10→P90)", fontsize=9)
+    ax_decomp.set_yticks(range(len(contribution_series)))
+    ax_decomp.set_yticklabels(contribution_series.index, fontsize=9)
+    ax_decomp.set_xlabel("Contribution à η (continues : β×[P10→P90], dummies : β)", fontsize=9)
     ax_decomp.set_title("Décomposition de η", fontsize=11)
     ax_decomp.grid(True, axis="x", alpha=0.3)
 
