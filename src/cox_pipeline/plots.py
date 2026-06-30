@@ -7,6 +7,74 @@ import numpy as np
 from scipy.stats import gaussian_kde
 
 
+def save_variable_diagnostics(X, output_dir: Path):
+    X = X.astype(float)
+    diag_dir = output_dir / "variable_diagnostics"
+    diag_dir.mkdir(parents=True, exist_ok=True)
+
+    summary_rows = []
+    for col in X.columns:
+        series = X[col].dropna().astype(float)
+        q1 = float(series.quantile(0.25))
+        q3 = float(series.quantile(0.75))
+        iqr = q3 - q1
+        lower = q1 - 1.5 * iqr
+        upper = q3 + 1.5 * iqr
+        outliers = series[(series < lower) | (series > upper)] if iqr > 0 else series.iloc[0:0]
+
+        summary_rows.append({
+            "variable": col,
+            "n": int(series.shape[0]),
+            "mean": float(series.mean()),
+            "std": float(series.std(ddof=1)) if len(series) > 1 else 0.0,
+            "min": float(series.min()),
+            "q1": q1,
+            "median": float(series.median()),
+            "q3": q3,
+            "max": float(series.max()),
+            "n_outliers_iqr": int(outliers.shape[0]),
+            "lower_bound_iqr": float(lower),
+            "upper_bound_iqr": float(upper),
+        })
+
+        fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+        ax_hist, ax_box = axes
+
+        if series.nunique() <= 10:
+            counts = series.value_counts().sort_index()
+            ax_hist.bar(counts.index.astype(str), counts.values, color="#4c78a8", alpha=0.85)
+            ax_hist.set_ylabel("Effectif")
+        else:
+            ax_hist.hist(series, bins=20, color="#4c78a8", alpha=0.75, edgecolor="black")
+            if not outliers.empty:
+                ax_hist.scatter(outliers.values, np.full(outliers.shape[0], 0.02 * max(1, len(series))),
+                                color="#d62728", s=18, zorder=5, label="Outliers IQR")
+                ax_hist.legend(fontsize=8)
+            ax_hist.set_ylabel("Effectif")
+        ax_hist.axvline(series.median(), color="black", linestyle="--", linewidth=1, label="Médiane")
+        ax_hist.set_title(f"Distribution - {col}")
+        ax_hist.set_xlabel(col)
+
+        ax_box.boxplot(series.values, vert=True, patch_artist=True,
+                       boxprops=dict(facecolor="#72b7b2", alpha=0.7),
+                       flierprops=dict(marker='o', markerfacecolor='#d62728', markersize=5, markeredgecolor='black'))
+        ax_box.set_title(f"Boxplot - {col}")
+        ax_box.set_ylabel(col)
+        ax_box.set_xticks([])
+
+        fig.suptitle(
+            f"{col} | médiane={series.median():.3g} | IQR outliers={outliers.shape[0]}",
+            fontsize=11,
+        )
+        plt.tight_layout()
+        plt.savefig(diag_dir / f"{col}.png", dpi=150, bbox_inches="tight")
+        plt.close()
+
+    import pandas as pd
+    pd.DataFrame(summary_rows).to_csv(diag_dir / "variable_summary.csv", index=False)
+    return diag_dir
+
+
 def save_hazard_ratios(model, output_dir: Path):
     summary = model.summary.sort_values("p", ascending=True)
     fig, ax = plt.subplots(figsize=(10, 6))

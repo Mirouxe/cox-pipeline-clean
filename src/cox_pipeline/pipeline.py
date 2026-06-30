@@ -6,7 +6,7 @@ from pathlib import Path
 from .data import load_config, prepare_dataset
 from .metrics import evaluate_brier_and_calibration, evaluate_pit_band, evaluate_time_auc, validate_cox
 from .model import export_cox_formula, fit_cox_model, infer_with_formula, infer_with_lifelines, save_model
-from .plots import save_brier_plot, save_calibration_plot, save_hazard_ratios, save_inference_probability_curves_with_true_time, save_inference_probability_curves_with_true_time_per_example, save_pit_band_plot, save_risk_time_map_eta, save_single_variable_sensitivity_plot, save_time_auc_plot, save_validation_plot
+from .plots import save_brier_plot, save_calibration_plot, save_hazard_ratios, save_inference_probability_curves_with_true_time, save_inference_probability_curves_with_true_time_per_example, save_pit_band_plot, save_risk_time_map_eta, save_single_variable_sensitivity_plot, save_time_auc_plot, save_validation_plot, save_variable_diagnostics
 from .reporting import build_report, write_report
 
 
@@ -16,6 +16,7 @@ def run_pipeline(config_path: str | Path):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     X, T, E, feature_names = prepare_dataset(config)
+    save_variable_diagnostics(X, output_dir)
     model = fit_cox_model(X, T, E, penalizer=float(config["model"].get("penalizer", 0.01)))
 
     horizons = [float(t) for t in config["model"]["time_horizons"]]

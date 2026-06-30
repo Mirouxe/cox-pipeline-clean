@@ -25,6 +25,7 @@ Pipeline propre, claire et concise pour :
 
 Le pipeline génère notamment :
 
+- `variable_diagnostics/` (un graphe par variable + `variable_summary.csv`)
 - `cox_hazard_ratios.png`
 - `cox_validation.png`
 - `cox_brier.png`
