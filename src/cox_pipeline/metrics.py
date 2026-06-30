@@ -296,3 +296,70 @@ def compute_cox_residual_diagnostics(model, X, T, E):
         "martingale": martingale.reset_index(drop=True),
         "ph_test": ph_summary,
     }
+
+
+def check_cox_assumptions(model, X, T, E, alpha: float = 0.05):
+    df = X.copy().astype(float)
+    df["T"] = np.asarray(T, dtype=float)
+    df["E"] = np.asarray(E, dtype=int)
+
+    residuals = compute_cox_residual_diagnostics(model, X, T, E)
+    ph_test = residuals["ph_test"].copy()
+    if "p" in ph_test.columns:
+        ph_test["ph_respected"] = ph_test["p"] >= alpha
+    else:
+        ph_test["ph_respected"] = True
+
+    duplicate_count = int(df.duplicated().sum())
+    independence_respected = duplicate_count == 0
+
+    continuous_cols = [col for col in X.columns if X[col].nunique() > 10]
+    linearity_rows = []
+    for col in continuous_cols:
+        work = df.copy()
+        centered = work[col] - work[col].mean()
+        scale = work[col].std(ddof=0)
+        if scale == 0 or np.isnan(scale):
+            continue
+        z = centered / scale
+        work[f"{col}__sq"] = z ** 2
+        try:
+            aug_model = CoxPHFitter(penalizer=float(getattr(model, "penalizer", 0.0) or 0.0))
+            aug_model.fit(work, duration_col="T", event_col="E")
+            pval = float(aug_model.summary.loc[f"{col}__sq", "p"])
+            linearity_rows.append({
+                "variable": col,
+                "p_quadratic": pval,
+                "linearity_respected": pval >= alpha,
+            })
+        except Exception:
+            linearity_rows.append({
+                "variable": col,
+                "p_quadratic": np.nan,
+                "linearity_respected": None,
+            })
+
+    linearity_df = pd.DataFrame(linearity_rows)
+    if not linearity_df.empty and linearity_df["linearity_respected"].notna().any():
+        linearity_respected = bool(linearity_df["linearity_respected"].dropna().all())
+    else:
+        linearity_respected = None
+
+    summary = {
+        "alpha": float(alpha),
+        "proportional_hazards": {
+            "globally_respected": bool(ph_test["ph_respected"].all()),
+            "details": ph_test.to_dict(orient="records"),
+        },
+        "independence": {
+            "respected": independence_respected,
+            "duplicate_rows": duplicate_count,
+            "note": "Heuristique: absence de doublons exacts (X, T, E). L'indépendance stricte reste une hypothèse de design.",
+        },
+        "linearity": {
+            "globally_respected": linearity_respected,
+            "details": linearity_df.to_dict(orient="records"),
+            "note": "Heuristique: test d'un terme quadratique additionnel pour chaque covariable continue.",
+        },
+    }
+    return summary

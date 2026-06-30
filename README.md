@@ -29,6 +29,7 @@ Le pipeline génère notamment :
 - `cox_hazard_ratios.png`
 - `cox_vs_kaplan_meier.png`
 - `cox_residual_diagnostics/` (Schoenfeld, Martingale, test PH)
+- `metrics_summary.json` inclut aussi un résumé des hypothèses du modèle
 - `cox_validation.png`
 - `cox_brier.png`
 - `cox_calibration.png`

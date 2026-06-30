@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from .data import load_config, prepare_dataset
-from .metrics import compute_cox_residual_diagnostics, evaluate_brier_and_calibration, evaluate_pit_band, evaluate_threshold_success, evaluate_time_auc, optimize_probability_threshold, validate_cox
+from .metrics import check_cox_assumptions, compute_cox_residual_diagnostics, evaluate_brier_and_calibration, evaluate_pit_band, evaluate_threshold_success, evaluate_time_auc, optimize_probability_threshold, validate_cox
 from .model import export_cox_formula, fit_cox_model, infer_with_formula, infer_with_lifelines, save_model
 from .plots import save_brier_plot, save_calibration_plot, save_cox_residual_diagnostics, save_hazard_ratios, save_inference_probability_curves_with_true_time, save_inference_probability_curves_with_true_time_per_example, save_pit_band_plot, save_risk_time_map_eta, save_single_variable_sensitivity_plot, save_survival_vs_kaplan_meier_plot, save_time_auc_plot, save_validation_plot, save_variable_diagnostics
 from .reporting import build_report, write_report
@@ -19,6 +19,7 @@ def run_pipeline(config_path: str | Path):
     save_variable_diagnostics(X, output_dir)
     model = fit_cox_model(X, T, E, penalizer=float(config["model"].get("penalizer", 0.01)))
     residual_diagnostics = compute_cox_residual_diagnostics(model, X, T, E)
+    assumption_checks = check_cox_assumptions(model, X, T, E)
 
     horizons = [float(t) for t in config["model"]["time_horizons"]]
     validation_cfg = config["validation"]
@@ -95,6 +96,7 @@ def run_pipeline(config_path: str | Path):
             "n_martingale_rows": int(residual_diagnostics["martingale"].shape[0]),
             "ph_test_rows": int(residual_diagnostics["ph_test"].shape[0]),
         },
+        "assumption_checks": assumption_checks,
         "brier": brier,
         "pit": {k: v for k, v in pit.items() if k != "u_values"},
         "auc": auc,
