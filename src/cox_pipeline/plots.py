@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
 from scipy.stats import gaussian_kde
+from lifelines import KaplanMeierFitter
 
 
 def save_variable_diagnostics(X, output_dir: Path):
@@ -73,6 +74,30 @@ def save_variable_diagnostics(X, output_dir: Path):
     import pandas as pd
     pd.DataFrame(summary_rows).to_csv(diag_dir / "variable_summary.csv", index=False)
     return diag_dir
+
+
+def save_survival_vs_kaplan_meier_plot(model, X, T, E, output_dir: Path):
+    X = X.astype(float)
+    T = np.asarray(T, dtype=float)
+    E = np.asarray(E, dtype=int)
+
+    km = KaplanMeierFitter().fit(T, E, label="Kaplan-Meier observé")
+    times = km.survival_function_.index.values.astype(float)
+    surv_pred = model.predict_survival_function(X, times=times)
+    mean_surv_pred = surv_pred.mean(axis=1)
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    ax.step(times, km.survival_function_.iloc[:, 0].values, where="post", linewidth=2, color="#1f77b4", label="Kaplan-Meier observé")
+    ax.plot(times, mean_surv_pred.values, linewidth=2, color="#d62728", label="Cox prédit moyen")
+    ax.set_xlabel("Temps")
+    ax.set_ylabel("Survie")
+    ax.set_title("Survie prédite par Cox vs Kaplan-Meier observé")
+    ax.set_ylim(0, 1.05)
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(output_dir / "cox_vs_kaplan_meier.png", dpi=150, bbox_inches="tight")
+    plt.close()
 
 
 def save_hazard_ratios(model, output_dir: Path):
