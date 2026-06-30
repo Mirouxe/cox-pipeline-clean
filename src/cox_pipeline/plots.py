@@ -183,6 +183,46 @@ def save_inference_probability_curves_with_true_time_per_example(model, X, T, E,
     return per_example_dir
 
 
+def save_single_variable_sensitivity_plot(model, X, output_dir: Path, variable_name: str, n_curves: int = 6):
+    X = X.astype(float)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if variable_name not in X.columns:
+        raise ValueError(f"Variable inconnue pour la sensibilité: {variable_name}")
+
+    reference = X.median().to_frame().T
+    values = np.linspace(float(X[variable_name].quantile(0.05)), float(X[variable_name].quantile(0.95)), n_curves)
+
+    survival = model.predict_survival_function(reference)
+    times = survival.index.values
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for value in values:
+        profile = reference.copy()
+        profile.loc[:, variable_name] = value
+        surv = model.predict_survival_function(profile, times=times)
+        prob = 1.0 - surv.values[:, 0]
+        ax.plot(times, prob, linewidth=2, label=f"{variable_name}={value:.3g}")
+
+    fixed_values = [f"{col}={reference.iloc[0][col]:.3g}" for col in X.columns if col != variable_name]
+    title_suffix = " | ".join(fixed_values[:6])
+    if len(fixed_values) > 6:
+        title_suffix += " | ..."
+
+    ax.set_xlabel("Temps")
+    ax.set_ylabel("P(apparition avant t)")
+    ax.set_title(
+        f"Sensibilité à {variable_name}\n"
+        f"Autres variables fixées: {title_suffix}"
+    )
+    ax.set_ylim(0, 1.05)
+    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=8, loc="best")
+    plt.tight_layout()
+    plt.savefig(output_dir / f"sensitivity_{variable_name}.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+
 def save_risk_time_map_eta(model, X, T, E, output_dir: Path):
     X = X.astype(float)
     T = np.asarray(T, dtype=float)
