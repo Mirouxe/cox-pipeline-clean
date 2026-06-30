@@ -32,6 +32,7 @@ Le pipeline génère notamment :
 - `cox_pit_band.png`
 - `cox_risk_time_map_eta.png`
 - `inference_probability_curves_with_true_time.png`
+- `inference_probability_curves_per_example/`
 - `cox_embedded.json`
 - `cox_model.joblib`
 - `report_interpretation.md`

@@ -108,6 +108,12 @@ def save_pit_band_plot(pit: dict, output_dir: Path):
     plt.close()
 
 
+def _build_example_label(subset, row_idx: int, max_features_in_legend: int = 3):
+    feature_priority = subset.var().sort_values(ascending=False).index.tolist()
+    selected_features = feature_priority[:max_features_in_legend]
+    return " | ".join(f"{col}={subset.iloc[row_idx][col]:.3g}" for col in selected_features)
+
+
 def save_inference_probability_curves_with_true_time(model, X, T, E, output_dir: Path, n_samples: int = 10, max_features_in_legend: int = 3):
     X = X.astype(float)
     T = np.asarray(T, dtype=float)
@@ -119,14 +125,11 @@ def save_inference_probability_curves_with_true_time(model, X, T, E, output_dir:
     times = surv.index.values
     proba = 1.0 - surv.values
 
-    feature_priority = subset.var().sort_values(ascending=False).index.tolist()
-    selected_features = feature_priority[:max_features_in_legend]
-
     fig, ax = plt.subplots(figsize=(12, 6))
     legend_handles = []
     for i in range(n):
         state = "obs" if E[i] == 1 else "cens"
-        feature_desc = " | ".join(f"{col}={subset.iloc[i][col]:.3g}" for col in selected_features)
+        feature_desc = _build_example_label(subset, i, max_features_in_legend=max_features_in_legend)
         curve_label = f"Essai {i+1} - {feature_desc}"
         line, = ax.plot(times, proba[:, i], alpha=0.8, linewidth=2)
         color = line.get_color()
@@ -143,6 +146,41 @@ def save_inference_probability_curves_with_true_time(model, X, T, E, output_dir:
     plt.tight_layout()
     plt.savefig(output_dir / "inference_probability_curves_with_true_time.png", dpi=150, bbox_inches="tight")
     plt.close()
+
+
+def save_inference_probability_curves_with_true_time_per_example(model, X, T, E, output_dir: Path, max_features_in_legend: int = 3):
+    X = X.astype(float)
+    T = np.asarray(T, dtype=float)
+    E = np.asarray(E, dtype=int)
+
+    per_example_dir = output_dir / "inference_probability_curves_per_example"
+    per_example_dir.mkdir(parents=True, exist_ok=True)
+
+    surv = model.predict_survival_function(X)
+    times = surv.index.values
+    proba = 1.0 - surv.values
+
+    for i in range(len(X)):
+        fig, ax = plt.subplots(figsize=(10, 5))
+        state = "obs" if E[i] == 1 else "cens"
+        feature_desc = _build_example_label(X, i, max_features_in_legend=max_features_in_legend)
+        ax.plot(times, proba[:, i], color="#1f77b4", alpha=0.9, linewidth=2.2,
+                label=f"Essai {i+1} - {feature_desc} ({state})")
+        ax.axvline(T[i], color="#d62728", linestyle="--", linewidth=1.8,
+                   label=f"t_réel={T[i]:.2f}")
+        p_true = float(np.interp(T[i], times, proba[:, i]))
+        ax.scatter([T[i]], [p_true], color="#d62728", s=35, zorder=5)
+        ax.set_xlabel("Temps")
+        ax.set_ylabel("P(apparition avant t)")
+        ax.set_title(f"Courbe d'inférence, essai {i+1}")
+        ax.set_ylim(0, 1.05)
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=8, loc="best")
+        plt.tight_layout()
+        plt.savefig(per_example_dir / f"example_{i+1:03d}.png", dpi=150, bbox_inches="tight")
+        plt.close()
+
+    return per_example_dir
 
 
 def save_risk_time_map_eta(model, X, T, E, output_dir: Path):
