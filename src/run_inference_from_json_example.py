@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,6 +43,23 @@ def main():
     print(new_example.to_string())
     print("\nPrédictions :")
     print(prediction.round(4).to_string())
+
+    horizons = sorted(float(t) for t in formula["baseline_survival"].keys())
+    probabilities = [float(prediction.loc["nouvel_exemple", f"P(T<={t})"]) for t in horizons]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(horizons, probabilities, "-o", color="#1f77b4", linewidth=2)
+    ax.set_xlabel("Temps")
+    ax.set_ylabel("P(apparition avant t)")
+    ax.set_title("Probabilité d'apparition en fonction du temps")
+    ax.set_ylim(0, 1.05)
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    figure_path = ROOT / "outputs" / "inference_from_json_example.png"
+    plt.savefig(figure_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print("\nFigure sauvegardée :", figure_path)
 
 
 if __name__ == "__main__":

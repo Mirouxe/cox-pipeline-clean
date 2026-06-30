@@ -75,6 +75,12 @@ Exemple prêt à lancer :
 python3 src/run_inference_from_json_example.py
 ```
 
+Ce script produit aussi la figure :
+
+```text
+outputs/inference_from_json_example.png
+```
+
 ## Philosophie
 
 Ce repo reprend l'essentiel utile de `MODELE_COX`, en version plus compacte :
