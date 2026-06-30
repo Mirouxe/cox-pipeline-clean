@@ -18,6 +18,7 @@ Pipeline propre, claire et concise pour :
 - `src/cox_pipeline/reporting.py` : rapport Markdown d'interprétation
 - `src/cox_pipeline/pipeline.py` : orchestration complète
 - `src/run_pipeline.py` : point d'entrée simple
+- `src/run_inference_from_json_example.py` : mini-script d'inférence sur un nouvel exemple
 - `examples/example_config.yaml` : configuration exemple
 
 ## Sorties
@@ -66,6 +67,12 @@ from cox_pipeline.model import load_formula_from_json, infer_with_formula
 
 formula = load_formula_from_json("outputs/cox_embedded.json")
 pred = infer_with_formula(configs, formula)
+```
+
+Exemple prêt à lancer :
+
+```bash
+python3 src/run_inference_from_json_example.py
 ```
 
 ## Philosophie
