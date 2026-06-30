@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from lifelines import CoxPHFitter, KaplanMeierFitter
+from lifelines.statistics import proportional_hazard_test
 from sklearn.model_selection import KFold
 from scipy import stats
 
@@ -277,4 +278,21 @@ def optimize_probability_threshold(model, X, T, E, threshold_grid=None):
         "n_success": int(best_row["n_success"]),
         "n_events": int(best_row["n_events"]),
         "grid_results": evaluations,
+    }
+
+
+def compute_cox_residual_diagnostics(model, X, T, E):
+    df = X.copy()
+    df["T"] = np.asarray(T, dtype=float)
+    df["E"] = np.asarray(E, dtype=int)
+
+    schoenfeld = model.compute_residuals(df, kind="schoenfeld")
+    martingale = model.compute_residuals(df, kind="martingale")
+    ph_test = proportional_hazard_test(model, df, time_transform="rank")
+    ph_summary = ph_test.summary.reset_index().rename(columns={"index": "variable"})
+
+    return {
+        "schoenfeld": schoenfeld.reset_index(drop=True),
+        "martingale": martingale.reset_index(drop=True),
+        "ph_test": ph_summary,
     }

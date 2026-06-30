@@ -297,6 +297,48 @@ def save_single_variable_sensitivity_plot(model, X, output_dir: Path, variable_n
     plt.close()
 
 
+def save_cox_residual_diagnostics(residuals: dict, output_dir: Path):
+    residual_dir = output_dir / "cox_residual_diagnostics"
+    residual_dir.mkdir(parents=True, exist_ok=True)
+
+    schoenfeld = residuals["schoenfeld"]
+    martingale = residuals["martingale"]
+    ph_test = residuals["ph_test"]
+
+    ph_test.to_csv(residual_dir / "proportional_hazard_test.csv", index=False)
+    schoenfeld.to_csv(residual_dir / "schoenfeld_residuals.csv", index=False)
+    martingale.to_csv(residual_dir / "martingale_residuals.csv", index=False)
+
+    if "T" in martingale.columns and "martingale" in martingale.columns:
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.scatter(martingale["T"], martingale["martingale"], alpha=0.6, s=18, color="#1f77b4")
+        ax.axhline(0, color="black", linestyle="--", linewidth=1)
+        ax.set_xlabel("Temps observé")
+        ax.set_ylabel("Résidu de Martingale")
+        ax.set_title("Résidus de Martingale")
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(residual_dir / "martingale_residuals.png", dpi=150, bbox_inches="tight")
+        plt.close()
+
+    schoenfeld_cols = [col for col in schoenfeld.columns if col not in {"T", "E"}]
+    for col in schoenfeld_cols[: min(6, len(schoenfeld_cols))]:
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.scatter(schoenfeld.index, schoenfeld[col], alpha=0.65, s=18, color="#d62728")
+        ax.axhline(0, color="black", linestyle="--", linewidth=1)
+        ax.set_xlabel("Ordre des événements")
+        ax.set_ylabel(f"Résidu de Schoenfeld - {col}")
+        pval_row = ph_test.loc[ph_test["variable"] == col]
+        pval_txt = f", p={float(pval_row['p'].iloc[0]):.3g}" if not pval_row.empty and "p" in pval_row.columns else ""
+        ax.set_title(f"Schoenfeld - {col}{pval_txt}")
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(residual_dir / f"schoenfeld_{col}.png", dpi=150, bbox_inches="tight")
+        plt.close()
+
+    return residual_dir
+
+
 def save_time_varying_risk_trajectory_plot(trajectory_df, output_path: Path):
     fig, axes = plt.subplots(2, 1, figsize=(9, 7), sharex=True)
 
