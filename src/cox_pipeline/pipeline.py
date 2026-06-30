@@ -46,8 +46,19 @@ def run_pipeline(config_path: str | Path):
     save_inference_probability_curves_with_true_time_per_example(model, X, T, E, output_dir)
 
     continuous_features = config.get("data", {}).get("features", {}).get("continuous", [])
+    sensitivity_cfg = config.get("sensitivity", {})
     if continuous_features:
-        save_single_variable_sensitivity_plot(model, X, output_dir, variable_name=continuous_features[0])
+        variable_name = sensitivity_cfg.get("variable", continuous_features[0])
+        n_curves = int(sensitivity_cfg.get("n_curves", 6))
+        fixed_values = sensitivity_cfg.get("fixed_values", {})
+        save_single_variable_sensitivity_plot(
+            model,
+            X,
+            output_dir,
+            variable_name=variable_name,
+            n_curves=n_curves,
+            fixed_values=fixed_values,
+        )
 
     sample = X.head(5).copy()
     infer_with_lifelines(model, sample, horizons).to_csv(output_dir / "inference_lifelines.csv", index=False)

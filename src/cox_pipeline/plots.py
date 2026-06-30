@@ -183,7 +183,7 @@ def save_inference_probability_curves_with_true_time_per_example(model, X, T, E,
     return per_example_dir
 
 
-def save_single_variable_sensitivity_plot(model, X, output_dir: Path, variable_name: str, n_curves: int = 6):
+def save_single_variable_sensitivity_plot(model, X, output_dir: Path, variable_name: str, n_curves: int = 6, fixed_values: dict | None = None):
     X = X.astype(float)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -191,6 +191,12 @@ def save_single_variable_sensitivity_plot(model, X, output_dir: Path, variable_n
         raise ValueError(f"Variable inconnue pour la sensibilité: {variable_name}")
 
     reference = X.median().to_frame().T
+    fixed_values = fixed_values or {}
+    for col, value in fixed_values.items():
+        if col not in reference.columns:
+            raise ValueError(f"Variable fixe inconnue: {col}")
+        reference.loc[:, col] = float(value)
+
     values = np.linspace(float(X[variable_name].quantile(0.05)), float(X[variable_name].quantile(0.95)), n_curves)
 
     survival = model.predict_survival_function(reference)

@@ -36,6 +36,23 @@ Le pipeline génère notamment :
 - `inference_probability_curves_per_example/`
 - `sensitivity_<variable>.png`
 - `cox_embedded.json`
+
+## Sensibilité mono-variable avec valeurs fixes choisies
+
+Tu peux piloter la variable étudiée et les autres valeurs fixées directement dans la config :
+
+```yaml
+sensitivity:
+  variable: X1_cont
+  n_curves: 6
+  fixed_values:
+    X2_cont: 0.5
+    X3_cont: -0.2
+    X6_cat_B: 1.0
+    X7_cat_M2: 0.0
+```
+
+La figure générée montre 6 courbes en faisant varier seulement `variable`, tandis que les autres colonnes listées dans `fixed_values` sont imposées aux valeurs choisies.
 - `cox_model.joblib`
 - `report_interpretation.md`
 - `metrics_summary.json`

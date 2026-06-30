@@ -32,3 +32,19 @@ validation:
 
 outputs:
   dir: outputs
+
+sensitivity:
+  variable: X1_cont
+  n_curves: 6
+  fixed_values:
+    X2_cont: 0.5
+    X3_cont: -0.2
+    X4_cont: 1.0
+    X5_cont: 0.0
+    X6_cat_B: 1.0
+    X6_cat_C: 0.0
+    X7_cat_M2: 0.0
+    X8_cat_L2: 0.0
+    X8_cat_L3: 1.0
+    X8_cat_L4: 0.0
+    X8_cat_L5: 0.0
