@@ -110,3 +110,30 @@ def infer_with_formula(configs: pd.DataFrame, formula: dict) -> pd.DataFrame:
         s0 = formula["baseline_survival"][t]
         out[f"P(T<={t})"] = 1.0 - np.power(s0, np.exp(lp))
     return out.clip(lower=0, upper=1)
+
+
+def predict_time_varying_risk_trajectory(model: CoxPHFitter, covariate_history: pd.DataFrame, measurement_times) -> pd.DataFrame:
+    """Applique le modèle de Cox à une série de covariables mesurées dans le temps.
+
+    Pour chaque instant de mesure t_k, la fonction utilise les covariables mesurées
+    à cet instant, calcule le hazard ratio et la probabilité cumulée
+    P(T<=t_k | x(t_k)).
+    """
+    measurement_times = np.asarray(measurement_times, dtype=float)
+    if len(covariate_history) != len(measurement_times):
+        raise ValueError("covariate_history et measurement_times doivent avoir la même longueur")
+
+    covariate_history = covariate_history.copy().astype(float)
+    risk_rows = []
+    for idx, t in enumerate(measurement_times):
+        profile = covariate_history.iloc[[idx]]
+        surv = model.predict_survival_function(profile, times=[float(t)])
+        event_probability = 1.0 - float(surv.iloc[0, 0])
+        hazard_ratio = float(model.predict_partial_hazard(profile).iloc[0])
+        risk_rows.append({
+            "measurement_time": float(t),
+            "hazard_ratio": hazard_ratio,
+            "event_probability": event_probability,
+        })
+
+    return pd.DataFrame(risk_rows)

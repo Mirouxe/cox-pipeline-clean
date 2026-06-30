@@ -12,7 +12,7 @@ Pipeline propre, claire et concise pour :
 ## Contenu
 
 - `src/cox_pipeline/data.py` : chargement et préparation des données
-- `src/cox_pipeline/model.py` : entraînement, export, rechargement JSON, inférence
+- `src/cox_pipeline/model.py` : entraînement, export, rechargement JSON, inférence, trajectoire de risque
 - `src/cox_pipeline/metrics.py` : C-index, Brier IPCW, AUC dépendant du temps
 - `src/cox_pipeline/plots.py` : graphes essentiels
 - `src/cox_pipeline/reporting.py` : rapport Markdown d'interprétation
@@ -119,6 +119,23 @@ Ce script produit aussi la figure :
 ```text
 outputs/inference_from_json_example.png
 ```
+
+## Trajectoire de risque avec covariables mesurées dans le temps
+
+Le repo contient aussi une fonction pour appliquer le modèle de Cox à une suite de profils mesurés à différents instants :
+
+```python
+from cox_pipeline.model import predict_time_varying_risk_trajectory
+from cox_pipeline.plots import save_time_varying_risk_trajectory_plot
+
+trajectory = predict_time_varying_risk_trajectory(model, covariate_history, measurement_times)
+save_time_varying_risk_trajectory_plot(trajectory, "outputs/time_varying_risk_trajectory.png")
+```
+
+La sortie contient pour chaque instant :
+- `measurement_time`
+- `hazard_ratio`
+- `event_probability`
 
 ## Philosophie
 

@@ -297,6 +297,26 @@ def save_single_variable_sensitivity_plot(model, X, output_dir: Path, variable_n
     plt.close()
 
 
+def save_time_varying_risk_trajectory_plot(trajectory_df, output_path: Path):
+    fig, axes = plt.subplots(2, 1, figsize=(9, 7), sharex=True)
+
+    axes[0].plot(trajectory_df["measurement_time"], trajectory_df["event_probability"], "-o", color="#1f77b4", linewidth=2)
+    axes[0].set_ylabel("P(apparition avant t)")
+    axes[0].set_title("Évolution de la probabilité d'événement")
+    axes[0].set_ylim(0, 1.05)
+    axes[0].grid(True, alpha=0.3)
+
+    axes[1].plot(trajectory_df["measurement_time"], trajectory_df["hazard_ratio"], "-o", color="#d62728", linewidth=2)
+    axes[1].set_xlabel("Temps de mesure")
+    axes[1].set_ylabel("Hazard ratio")
+    axes[1].set_title("Évolution du risque relatif")
+    axes[1].grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+
+
 def save_risk_time_map_eta(model, X, T, E, output_dir: Path):
     X = X.astype(float)
     T = np.asarray(T, dtype=float)
