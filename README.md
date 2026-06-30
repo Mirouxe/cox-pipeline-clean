@@ -12,7 +12,7 @@ Pipeline propre, claire et concise pour :
 ## Contenu
 
 - `src/cox_pipeline/data.py` : chargement et préparation des données
-- `src/cox_pipeline/model.py` : entraînement, export, inférence
+- `src/cox_pipeline/model.py` : entraînement, export, rechargement JSON, inférence
 - `src/cox_pipeline/metrics.py` : C-index, Brier IPCW, AUC dépendant du temps
 - `src/cox_pipeline/plots.py` : graphes essentiels
 - `src/cox_pipeline/reporting.py` : rapport Markdown d'interprétation
@@ -58,6 +58,15 @@ Le fichier source doit contenir :
 - une colonne d'événement (1 = événement, 0 = censuré)
 - des variables continues
 - éventuellement des variables catégorielles
+
+## Recharger la formule JSON pour une inférence explicite
+
+```python
+from cox_pipeline.model import load_formula_from_json, infer_with_formula
+
+formula = load_formula_from_json("outputs/cox_embedded.json")
+pred = infer_with_formula(configs, formula)
+```
 
 ## Philosophie
 

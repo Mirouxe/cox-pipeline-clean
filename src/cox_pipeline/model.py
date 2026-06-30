@@ -50,6 +50,37 @@ def load_formula(path: str | Path) -> dict:
         return json.load(f)
 
 
+def load_formula_from_json(path: str | Path) -> dict:
+    """Recharge la formule Cox exportée en JSON et reconstruit le dictionnaire
+    `formula` attendu par `infer_with_formula`.
+    """
+    formula = load_formula(path)
+    required_keys = {
+        "formula",
+        "variables",
+        "beta",
+        "mu",
+        "baseline_survival",
+        "baseline_cumulative_hazard",
+    }
+    missing = sorted(required_keys - set(formula))
+    if missing:
+        raise ValueError(f"JSON de formule incomplet, clés manquantes: {missing}")
+
+    formula["variables"] = list(formula["variables"])
+    formula["beta"] = {str(k): float(v) for k, v in formula["beta"].items()}
+    formula["mu"] = {str(k): float(v) for k, v in formula["mu"].items()}
+    formula["baseline_survival"] = {
+        str(k): float(v) for k, v in formula["baseline_survival"].items()
+    }
+    formula["baseline_cumulative_hazard"] = {
+        str(k): float(v) for k, v in formula["baseline_cumulative_hazard"].items()
+    }
+    if "concordance_index" in formula:
+        formula["concordance_index"] = float(formula["concordance_index"])
+    return formula
+
+
 def infer_with_lifelines(model: CoxPHFitter, configs: pd.DataFrame, horizons: list[float]) -> pd.DataFrame:
     survival = model.predict_survival_function(configs, times=horizons)
     result = pd.DataFrame(index=configs.index)
