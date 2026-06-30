@@ -54,6 +54,26 @@ sensitivity:
 ```
 
 La figure générée montre 6 courbes en faisant varier seulement `variable`, tandis que les autres colonnes listées dans `fixed_values` sont imposées aux valeurs choisies.
+
+## Évaluation par seuil de probabilité
+
+La pipeline inclut aussi deux fonctions :
+- une évaluation pour un seuil fixe, par défaut `0.6`
+- une optimisation du seuil pour choisir le seuil le plus élevé parmi ceux qui maximisent le taux de succès
+
+Le critère de succès est :
+- pour un individu avec événement observé, on calcule le premier temps où la probabilité prédite dépasse le seuil
+- la prédiction est comptée comme un succès si le temps réel de l'événement survient avant ou au moment de ce franchissement
+
+Configuration associée :
+
+```yaml
+threshold_evaluation:
+  threshold: 0.6
+  grid: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+```
+
+Les résultats sont écrits dans `metrics_summary.json`.
 - `cox_model.joblib`
 - `report_interpretation.md`
 - `metrics_summary.json`

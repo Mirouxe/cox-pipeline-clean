@@ -207,3 +207,74 @@ def evaluate_time_auc(model, X, T, E, horizons, n_times=20):
         "auc_mean": float(auc_mean),
         "auc_at_horizons": {str(t): float(v) for t, v in zip(horizons, horizon_auc)},
     }
+
+
+def evaluate_threshold_success(model, X, T, E, threshold=0.6):
+    T = np.asarray(T, dtype=float)
+    E = np.asarray(E, dtype=int)
+    event_mask = E == 1
+
+    X_event = X.loc[event_mask]
+    T_event = T[event_mask]
+    surv = model.predict_survival_function(X_event)
+    times = surv.index.values.astype(float)
+    proba = 1.0 - surv.values
+
+    crossing_times = []
+    success_flags = []
+    for j in range(proba.shape[1]):
+        curve = proba[:, j]
+        above = np.where(curve >= threshold)[0]
+        if len(above) == 0:
+            t_cross = np.nan
+            success = False
+        else:
+            t_cross = float(times[above[0]])
+            success = bool(T_event[j] <= t_cross)
+        crossing_times.append(t_cross)
+        success_flags.append(success)
+
+    success_rate = float(np.mean(success_flags)) if success_flags else float("nan")
+    details = [
+        {
+            "event_index": int(idx),
+            "real_event_time": float(t_real),
+            "threshold_crossing_time": None if np.isnan(t_cross) else float(t_cross),
+            "success": bool(success),
+        }
+        for idx, t_real, t_cross, success in zip(np.where(event_mask)[0], T_event, crossing_times, success_flags)
+    ]
+    return {
+        "threshold": float(threshold),
+        "n_events": int(event_mask.sum()),
+        "success_rate": success_rate,
+        "n_success": int(np.sum(success_flags)),
+        "details": details,
+    }
+
+
+def optimize_probability_threshold(model, X, T, E, threshold_grid=None):
+    if threshold_grid is None:
+        threshold_grid = np.linspace(0.05, 0.95, 19)
+
+    evaluations = []
+    for threshold in threshold_grid:
+        result = evaluate_threshold_success(model, X, T, E, threshold=float(threshold))
+        evaluations.append({
+            "threshold": float(threshold),
+            "success_rate": float(result["success_rate"]),
+            "n_success": int(result["n_success"]),
+            "n_events": int(result["n_events"]),
+        })
+
+    max_success_rate = max(row["success_rate"] for row in evaluations)
+    best_rows = [row for row in evaluations if row["success_rate"] == max_success_rate]
+    best_row = max(best_rows, key=lambda row: row["threshold"])
+
+    return {
+        "optimal_threshold": float(best_row["threshold"]),
+        "success_rate": float(best_row["success_rate"]),
+        "n_success": int(best_row["n_success"]),
+        "n_events": int(best_row["n_events"]),
+        "grid_results": evaluations,
+    }

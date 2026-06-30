@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from .data import load_config, prepare_dataset
-from .metrics import evaluate_brier_and_calibration, evaluate_pit_band, evaluate_time_auc, validate_cox
+from .metrics import evaluate_brier_and_calibration, evaluate_pit_band, evaluate_threshold_success, evaluate_time_auc, optimize_probability_threshold, validate_cox
 from .model import export_cox_formula, fit_cox_model, infer_with_formula, infer_with_lifelines, save_model
 from .plots import save_brier_plot, save_calibration_plot, save_hazard_ratios, save_inference_probability_curves_with_true_time, save_inference_probability_curves_with_true_time_per_example, save_pit_band_plot, save_risk_time_map_eta, save_single_variable_sensitivity_plot, save_time_auc_plot, save_validation_plot, save_variable_diagnostics
 from .reporting import build_report, write_report
@@ -32,6 +32,21 @@ def run_pipeline(config_path: str | Path):
     brier = evaluate_brier_and_calibration(model, X, T, E, horizons)
     pit = evaluate_pit_band(model, X, T, E, band=tuple(validation_cfg.get("pit_band", [0.8, 1.0])))
     auc = evaluate_time_auc(model, X, T, E, horizons, n_times=int(validation_cfg.get("auc_n_times", 20)))
+    threshold_cfg = config.get("threshold_evaluation", {})
+    threshold_success = evaluate_threshold_success(
+        model,
+        X,
+        T,
+        E,
+        threshold=float(threshold_cfg.get("threshold", 0.6)),
+    )
+    threshold_optimization = optimize_probability_threshold(
+        model,
+        X,
+        T,
+        E,
+        threshold_grid=threshold_cfg.get("grid"),
+    )
 
     save_model(model, output_dir / "cox_model.joblib")
     formula = export_cox_formula(model, horizons, output_dir / "cox_embedded.json")
@@ -75,6 +90,8 @@ def run_pipeline(config_path: str | Path):
         "brier": brier,
         "pit": {k: v for k, v in pit.items() if k != "u_values"},
         "auc": auc,
+        "threshold_success": threshold_success,
+        "threshold_optimization": threshold_optimization,
         "report": str(report_path),
     }
     with open(output_dir / "metrics_summary.json", "w", encoding="utf-8") as f:
