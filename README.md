@@ -35,6 +35,8 @@ Le pipeline génère notamment :
 - `cox_calibration.png`
 - `cox_time_auc.png`
 - `cox_pit_band.png`
+- `threshold_success_evaluation.png`
+- `threshold_optimization.png`
 - `cox_risk_time_map_eta.png`
 - `inference_probability_curves_with_true_time.png`
 - `inference_probability_curves_per_example/`

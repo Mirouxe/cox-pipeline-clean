@@ -76,6 +76,61 @@ def save_variable_diagnostics(X, output_dir: Path):
     return diag_dir
 
 
+def save_threshold_success_plot(threshold_success: dict, output_dir: Path):
+    details = threshold_success.get("details", [])
+    if not details:
+        return
+
+    real_times = np.array([row["real_event_time"] for row in details], dtype=float)
+    crossing_times = np.array([
+        np.nan if row["threshold_crossing_time"] is None else row["threshold_crossing_time"]
+        for row in details
+    ], dtype=float)
+    success = np.array([row["success"] for row in details], dtype=bool)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.scatter(real_times[success], crossing_times[success], color="#2ca02c", alpha=0.75, s=30, label="Succès")
+    ax.scatter(real_times[~success], crossing_times[~success], color="#d62728", alpha=0.75, s=30, label="Échec")
+    lim = np.nanmax(np.concatenate([real_times, crossing_times[np.isfinite(crossing_times)]])) if np.isfinite(crossing_times).any() else np.max(real_times)
+    ax.plot([0, lim], [0, lim], "--", color="black", linewidth=1, label="t_réel = t_seuil")
+    ax.set_xlabel("Temps réel de l'événement")
+    ax.set_ylabel(f"Temps de franchissement du seuil p={threshold_success['threshold']:.2f}")
+    ax.set_title(f"Évaluation au seuil fixe, succès={threshold_success['success_rate']:.1%}")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(output_dir / "threshold_success_evaluation.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+
+def save_threshold_optimization_plot(threshold_optimization: dict, output_dir: Path):
+    grid = threshold_optimization.get("grid_results", [])
+    if not grid:
+        return
+
+    thresholds = [row["threshold"] for row in grid]
+    success_rates = [row["success_rate"] for row in grid]
+    optimal_threshold = threshold_optimization["optimal_threshold"]
+    optimal_success = threshold_optimization["success_rate"]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(thresholds, success_rates, "-o", color="#1f77b4", linewidth=2)
+    ax.axvline(optimal_threshold, color="#d62728", linestyle="--", linewidth=1.5,
+               label=f"Seuil optimal={optimal_threshold:.2f}")
+    ax.axhline(optimal_success, color="#2ca02c", linestyle=":", linewidth=1.5,
+               label=f"Succès max={optimal_success:.1%}")
+    ax.scatter([optimal_threshold], [optimal_success], color="#d62728", s=50, zorder=5)
+    ax.set_xlabel("Seuil de probabilité")
+    ax.set_ylabel("Taux de succès")
+    ax.set_title("Optimisation du seuil de probabilité")
+    ax.set_ylim(0, 1.05)
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(output_dir / "threshold_optimization.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+
 def save_survival_vs_kaplan_meier_plot(model, X, T, E, output_dir: Path):
     X = X.astype(float)
     T = np.asarray(T, dtype=float)

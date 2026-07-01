@@ -6,7 +6,7 @@ from pathlib import Path
 from .data import load_config, prepare_dataset
 from .metrics import check_cox_assumptions, compute_cox_residual_diagnostics, evaluate_brier_and_calibration, evaluate_pit_band, evaluate_threshold_success, evaluate_time_auc, optimize_probability_threshold, validate_cox
 from .model import export_cox_formula, fit_cox_model, infer_with_formula, infer_with_lifelines, save_model
-from .plots import save_brier_plot, save_calibration_plot, save_cox_residual_diagnostics, save_hazard_ratios, save_inference_probability_curves_with_true_time, save_inference_probability_curves_with_true_time_per_example, save_pit_band_plot, save_risk_time_map_eta, save_single_variable_sensitivity_plot, save_survival_vs_kaplan_meier_plot, save_time_auc_plot, save_validation_plot, save_variable_diagnostics
+from .plots import save_brier_plot, save_calibration_plot, save_cox_residual_diagnostics, save_hazard_ratios, save_inference_probability_curves_with_true_time, save_inference_probability_curves_with_true_time_per_example, save_pit_band_plot, save_risk_time_map_eta, save_single_variable_sensitivity_plot, save_survival_vs_kaplan_meier_plot, save_threshold_optimization_plot, save_threshold_success_plot, save_time_auc_plot, save_validation_plot, save_variable_diagnostics
 from .reporting import build_report, write_report
 
 
@@ -61,6 +61,8 @@ def run_pipeline(config_path: str | Path):
     save_calibration_plot(brier["calibration"], output_dir)
     save_time_auc_plot(auc, output_dir)
     save_pit_band_plot(pit, output_dir)
+    save_threshold_success_plot(threshold_success, output_dir)
+    save_threshold_optimization_plot(threshold_optimization, output_dir)
     save_risk_time_map_eta(model, X, T, E, output_dir)
     save_inference_probability_curves_with_true_time(model, X, T, E, output_dir)
     save_inference_probability_curves_with_true_time_per_example(model, X, T, E, output_dir)
